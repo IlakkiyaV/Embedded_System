@@ -1,0 +1,104 @@
+#define LCD_I2C_ADDR 0x4E  // PCF8574T default address (0x27 << 1)
+
+#define LCD_BACKLIGHT 0x08
+#define LCD_ENABLE    0x04
+#define LCD_COMMAND   0
+#define LCD_DATA      1
+
+// ==== Function Prototypes ====
+void I2C_LCD_Init();
+void I2C_LCD_Cmd(unsigned char cmd);
+void I2C_LCD_Chr(unsigned char row, unsigned char col, char chr);
+void I2C_LCD_Out(unsigned char row, unsigned char col, char *text);
+void I2C_LCD_Write(unsigned char nibble, unsigned char mode);
+void I2C_LCD_Clear();
+void Scroll_Text(char *text);
+
+// ==== MAIN FUNCTION ====
+void main() {
+    I2C1_Init(100000); // Initialize I2C at 100kHz
+    Delay_ms(100);     // Wait for LCD to power up
+
+    I2C_LCD_Init();    // Initialize LCD
+
+    while(1) {
+        // Scroll "Welcome to KPRIET"
+        Scroll_Text(" Welcome to KPRIET ");
+        Delay_ms(2000);  // Pause after scroll
+
+        // Scroll "Welcome to ARC"
+        Scroll_Text(" Welcome to ARC ");
+        Delay_ms(2000);  // Pause after scroll
+
+        // Display "I am Ilakkiya" statically
+        I2C_LCD_Clear();
+        I2C_LCD_Out(1, 2, "I am Ilakkiya");
+        Delay_ms(2000);  // Hold for 2 seconds
+    }
+}
+
+// ==== I2C LCD FUNCTIONS ====
+
+void I2C_LCD_Init() {
+    Delay_ms(50);
+    I2C_LCD_Cmd(0x33);
+    I2C_LCD_Cmd(0x32);
+    I2C_LCD_Cmd(0x28);
+    I2C_LCD_Cmd(0x0C);
+    I2C_LCD_Cmd(0x06);
+    I2C_LCD_Cmd(0x01);
+    Delay_ms(2);
+}
+
+void I2C_LCD_Cmd(unsigned char cmd) {
+    I2C_LCD_Write(cmd & 0xF0, LCD_COMMAND);
+    I2C_LCD_Write((cmd << 4) & 0xF0, LCD_COMMAND);
+}
+
+void I2C_LCD_Chr(unsigned char row, unsigned char col, char chr) {
+    unsigned char rowAddr[] = {0x80, 0xC0};
+    I2C_LCD_Cmd(rowAddr[row - 1] + (col - 1));
+    I2C_LCD_Write(chr & 0xF0, LCD_DATA);
+    I2C_LCD_Write((chr << 4) & 0xF0, LCD_DATA);
+}
+
+void I2C_LCD_Out(unsigned char row, unsigned char col, char *text) {
+    while(*text) {
+        I2C_LCD_Chr(row, col++, *text++);
+    }
+}
+
+void I2C_LCD_Write(unsigned char nibble, unsigned char mode) {
+    unsigned char data_u, data_l;
+    data_u = nibble | LCD_BACKLIGHT | mode | LCD_ENABLE;
+    data_l = nibble | LCD_BACKLIGHT | mode;
+
+    I2C1_Start();
+    I2C1_Wr(LCD_I2C_ADDR);
+    I2C1_Wr(data_u);
+    I2C1_Wr(data_l);
+    I2C1_Stop();
+    Delay_us(50);
+}
+
+void I2C_LCD_Clear() {
+    I2C_LCD_Cmd(0x01);
+    Delay_ms(2);
+}
+
+// ==== SCROLLING FUNCTION ====
+
+void Scroll_Text(char *text) {
+    char buffer[17];
+    unsigned short i, len;
+
+    len = strlen(text);
+
+    for(i = 0; i <= len - 16; i++) {
+        I2C_LCD_Clear();
+        strncpy(buffer, text + i, 16);
+        buffer[16] = '\0';
+        I2C_LCD_Out(1, 1, buffer);
+        Delay_ms(800);  // Wait 2 seconds between shifts
+    }
+}
