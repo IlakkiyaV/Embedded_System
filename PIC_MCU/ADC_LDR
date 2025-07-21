@@ -1,0 +1,31 @@
+unsigned int adc_value;
+unsigned char pwm_duty;
+
+void main() {
+    // 1. Configure I/O
+    TRISA.RA3 = 1;      // Set RA3 (AN3) as analog input
+    TRISC.RC2 = 0;      // Set RC2 (CCP1) as PWM output
+    
+    // 2. Configure ADC
+    ADCON1 = 0x80;      // AN0-AN3 analog, VREF+ = VDD, VREF- = VSS
+    ADCON0 = 0x1D;      // Channel AN3 (0b01101), ADC enabled
+    
+    // 3. Configure PWM
+    PWM1_Init(5000);    // Initialize 5kHz PWM
+    PWM1_Start();       // Start PWM module
+    PWM1_Set_Duty(0);   // Start with 0% duty cycle
+    
+    while(1) {
+        // 4. Read LDR value from AN3
+        adc_value = ADC_Read(3);  // Read AN3 (returns 0-1023)
+        
+        // 5. Convert to 8-bit duty cycle (0-255)
+        pwm_duty = adc_value >> 2;  // Same as adc_value/4 but faster
+        
+        // 6. Update PWM duty cycle
+        PWM1_Set_Duty(pwm_duty);
+        
+        // 7. Short delay for stability
+        Delay_ms(10);
+    }
+}
