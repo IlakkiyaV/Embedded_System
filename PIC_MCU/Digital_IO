@@ -1,0 +1,17 @@
+void main() {
+    
+    TRISC.B2 = 0; // RC2 as output (LED)
+    TRISB.B0 = 1; // RB0 as input (Button)
+
+    PORTC.B2 = 0; // LED OFF initially
+
+    while(1) {
+    
+        if (PORTB.B0 == 0) {  // Button pressed (input goes HIGH)
+            PORTC.B2 = 0;      // LED ON
+        }
+        else {
+            PORTC.B2 = 1;      // LED OFF
+        }
+    }
+}
