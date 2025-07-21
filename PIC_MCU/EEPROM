@@ -1,0 +1,95 @@
+
+sbit LCD_RS at RD0_bit;
+sbit LCD_EN at RD1_bit;
+sbit LCD_D4 at RD2_bit;
+sbit LCD_D5 at RD3_bit;
+sbit LCD_D6 at RD4_bit;
+sbit LCD_D7 at RD5_bit;
+
+sbit LCD_RS_Direction at TRISD0_bit;
+sbit LCD_EN_Direction at TRISD1_bit;
+sbit LCD_D4_Direction at TRISD2_bit;
+sbit LCD_D5_Direction at TRISD3_bit;
+sbit LCD_D6_Direction at TRISD4_bit;
+sbit LCD_D7_Direction at TRISD5_bit;
+
+// Variables
+char name[20] = "ilakkiya";
+char read_data[20];     // Same size as name (6 letters + '\0')
+
+// EEPROM Write Function
+void EEPROM_WriteString(unsigned short address, char *text) {
+    while(*text) {
+        EEPROM_Write(address++, *text++);
+        Delay_ms(5);
+    }
+}
+
+// EEPROM Read Function
+void EEPROM_ReadString(unsigned short address, char *buffer, unsigned short len) {
+    unsigned short i;
+    for(i = 0; i < len; i++) {
+        buffer[i] = EEPROM_Read(address + i);
+        Delay_ms(5);
+    }
+    buffer[i] = '\0';   // Null terminate
+}
+
+// EEPROM Erase Function (fills with space ' ')
+void EEPROM_EraseString(unsigned short address, unsigned short len) {
+    unsigned short i;
+    for(i = 0; i < len; i++) {
+        EEPROM_Write(address + i, ' ');
+        Delay_ms(5);
+    }
+}
+
+// Main Program
+void main() {
+    TRISB5_bit=1;
+    TRISB3_bit=1;
+    TRISB1_bit=1;
+    TRISD=0x00;
+    PORTB=0x00;
+   
+    Lcd_Init();              // Initialize LCD
+    Lcd_Cmd(_LCD_CLEAR);     // Clear display
+    Lcd_Cmd(_LCD_CURSOR_OFF);
+    Lcd_Out(1,1,"EEPROM");
+    while(1){
+     if(PORTB.F5==0){
+     Delay_ms(20);
+     if(PORTB.F5 ==0){
+     EEPROM_WriteString(0x00, name);
+     Lcd_Cmd(_LCD_CLEAR);
+     Lcd_Out(1,1,"Written");
+     Lcd_Out(2,1,"Ahi");
+     while(PORTB.F5==0);
+     }
+     }
+     
+     if(PORTB.F3==0){
+     Delay_ms(20);
+     if(PORTB.F3 ==0){
+       EEPROM_ReadString(0x00, read_data, 20);
+     Lcd_Cmd(_LCD_CLEAR);
+     Lcd_Out(1,1,"Read");
+     Lcd_Out(2,1,read_data);
+     while(PORTB.F3==0);
+     }
+     }      // Write "ilakkiya" to EEPROM
+    //EEP if(PORTB.F1==0){
+     //Delay_ms(20);
+     if(PORTB.F1 ==0){
+      Delay_ms(20);
+      if(PORTB.F1==0){
+       EEPROM_EraseString(0x00, 20);
+     Lcd_Cmd(_LCD_CLEAR);
+     Lcd_Out(1,1,"Cleared");
+     
+     while(PORTB.F1==0);
+     
+      }
+      }
+}
+}
