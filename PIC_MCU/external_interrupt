@@ -1,0 +1,58 @@
+// LCD module connections (PORTD)
+sbit LCD_RS at RD0_bit;
+sbit LCD_EN at RD1_bit;
+sbit LCD_D4 at RD2_bit;
+sbit LCD_D5 at RD3_bit;
+sbit LCD_D6 at RD4_bit;
+sbit LCD_D7 at RD5_bit;
+
+sbit LCD_RS_Direction at TRISD0_bit;
+sbit LCD_EN_Direction at TRISD1_bit;
+sbit LCD_D4_Direction at TRISD2_bit;
+sbit LCD_D5_Direction at TRISD3_bit;
+sbit LCD_D6_Direction at TRISD4_bit;
+sbit LCD_D7_Direction at TRISD5_bit;
+
+// Global variables
+unsigned int count = 0;
+char txt[10];
+unsigned short updateLCD = 0;   // Flag to signal LCD update in main loop
+
+// Interrupt Service Routine
+void interrupt() {
+   if (INTF_bit == 1) {        // Check if RB0/INT triggered interrupt
+      count++;                 // Increment press count
+      updateLCD = 1;           // Set flag to update LCD in main()
+      INTF_bit = 0;            // Clear external interrupt flag
+      Delay_ms(200);           // Debounce delay
+   }
+}
+
+void main() {
+   // Set RB0 as input (push button)
+   TRISB0_bit = 1;
+
+   // Configure external interrupt on falling edge
+   OPTION_REG.INTEDG = 0;
+
+   // Clear and enable INT0 interrupt
+   INTF_bit = 0;  // Clear flag
+   INTE_bit = 1;  // Enable INT0
+   GIE_bit = 1;   // Enable global interrupts
+
+   // Initialize LCD
+   Lcd_Init();
+   Lcd_Cmd(_LCD_CLEAR);
+   Lcd_Cmd(_LCD_CURSOR_OFF);
+   Lcd_Out(1, 1, "Press Count:");
+
+   // Main program loop
+   while (1) {
+      if (updateLCD) {
+         updateLCD = 0;             // Clear flag
+         Lcd_Out(2, 1, "Count:     "); // Clear previous value
+         IntToStr(count, txt);      // Convert to string
+         Lcd_Out(2, 8, txt);        // Display count
+      }
+   }
+}
